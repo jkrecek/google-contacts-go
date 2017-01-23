@@ -1,7 +1,6 @@
 package contacts
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 )
@@ -60,7 +59,6 @@ func (r *requestBuilder) Do() error {
 		return err
 	}
 
-	fmt.Printf("REQUEST: %s %s\n  Code: %d\n\n", r.method, url, resp.StatusCode)
 	if resp.StatusCode >= 400 {
 		return apiError(url, resp.Body)
 	} else {
