@@ -39,7 +39,7 @@ type ApiError struct {
 }
 
 func (e *ApiError) Error() string {
-	return fmt.Sprintf("Request to URL `%d` had an error: %s.\n", e.url, e.responseError)
+	return fmt.Sprintf("Request to URL `%s` had an error: %s.\n", e.url, e.responseError)
 }
 
 func apiError(url string, rc io.ReadCloser) error {

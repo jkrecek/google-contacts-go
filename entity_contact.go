@@ -30,7 +30,7 @@ type contactFeed struct {
 type Contact struct {
 	XMLName      xml.Name                   `xml:"http://www.w3.org/2005/Atom entry"`
 	IdUrl        string                     `xml:"id,omitempty"`
-	Updated      time.Time                  `xml:"updated,omitempty"`
+	Updated      *time.Time                 `xml:"updated,omitempty"`
 	Title        string                     `xml:"title,omitempty"`
 	Name         Name                       `xml:"name,omitempty"`
 	Organization *Organization              `xml:"organization,omitempty"`
