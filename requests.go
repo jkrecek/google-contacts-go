@@ -38,12 +38,7 @@ func (c *Client) CreateContact(contact *Contact) (*Contact, error) {
 	return respContact, nil
 }
 
-func (c *Client) UpdateContact(contact *Contact) (*Contact, error) {
-	id, err := contact.GetId()
-	if err != nil {
-		return nil, err
-	}
-
+func (c *Client) UpdateContact(address string, contact *Contact) (*Contact, error) {
 	bts, err := xml.Marshal(contact)
 	if err != nil {
 		return nil, err
@@ -52,8 +47,16 @@ func (c *Client) UpdateContact(contact *Contact) (*Contact, error) {
 	bodyReader := bytes.NewReader(bts)
 
 	respContact := new(Contact)
-	path := fmt.Sprintf("contacts/default/full/%s", id)
-	err = newRequest(c, "PUT", path).
+	if address == "" {
+		id, err := contact.GetId()
+		if err != nil {
+			return nil, err
+		}
+
+		address = fmt.Sprintf("contacts/default/full/%s", id)
+	}
+
+	err = newRequest(c, "PUT", address).
 		setBody(bodyReader).
 		setInto(respContact).
 		setRequestFn(func(request *http.Request) {
