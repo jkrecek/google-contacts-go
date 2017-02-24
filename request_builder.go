@@ -59,6 +59,8 @@ func (r *requestBuilder) Do() error {
 		return err
 	}
 
+	defer resp.Body.Close()
+
 	if resp.StatusCode >= 400 {
 		return apiError(url, resp.Body)
 	} else {
