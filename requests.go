@@ -5,16 +5,48 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net/http"
+	"path"
 )
 
 func (c *Client) GetContacts() (contacts []*Contact, err error) {
+	url := c.getUrl("contacts/default/full?max-results=500")
+	var pageContacts []*Contact
+	for url != "" {
+		pageContacts, url, err = c.getContactsPaged(url)
+		contacts = append(contacts, pageContacts...)
+	}
+
+	return
+}
+
+func (c *Client) getContactsPaged(url string) (contacts []*Contact, nextLink string, err error) {
 	feed := new(contactFeed)
-	err = c.getRequest("contacts/default/full", feed)
+	err = newUrlRequest(c, "GET", url).setInto(feed).Do()
 	if err != nil {
 		return
 	}
 
+	if feed.getNextLink() != nil {
+		nextLink = feed.getNextLink().Href
+	}
+
 	contacts = feed.Contacts
+	return
+}
+
+func (c *Client) GetContactsInGroup(groupId string) (contacts []*Contact, err error) {
+	simpleId := path.Base(groupId)
+	allContacts, err := c.GetContacts()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, cnt := range allContacts {
+		if cnt.IsMemberOf(simpleId) {
+			contacts = append(contacts, cnt)
+		}
+	}
+
 	return
 }
 
@@ -78,4 +110,50 @@ func (c *Client) DeleteContact(contactId string) error {
 		}).
 		Do()
 	return err
+}
+
+func (c *Client) GetGroups() (groups []*Group, err error) {
+	url := c.getUrl("groups/default/full")
+	var pageGroups []*Group
+	for url != "" {
+		pageGroups, url, err = c.getGroupsPaged(url)
+		groups = append(groups, pageGroups...)
+	}
+
+	return
+}
+
+func (c *Client) getGroupsPaged(url string) (groups []*Group, nextLink string, err error) {
+	feed := new(groupsFeed)
+	err = newUrlRequest(c, "GET", url).setInto(feed).Do()
+	if err != nil {
+		return
+	}
+
+	if feed.getNextLink() != nil {
+		nextLink = feed.getNextLink().Href
+	}
+
+	groups = feed.Groups
+	return
+}
+
+func (c *Client) CreateGroup(group *Group) (*Group, error) {
+	bts, err := xml.Marshal(group)
+	if err != nil {
+		return nil, err
+	}
+
+	bodyReader := bytes.NewReader(bts)
+
+	respGroup := new(Group)
+	err = newRequest(c, "POST", "groups/default/full").
+		setBody(bodyReader).
+		setInto(respGroup).
+		Do()
+	if err != nil {
+		return nil, err
+	}
+
+	return respGroup, nil
 }

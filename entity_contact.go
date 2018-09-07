@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"path"
 	"regexp"
 	"strings"
 	"time"
@@ -18,25 +19,40 @@ const (
 )
 
 type contactFeed struct {
-	XMLName          xml.Name               `xml:"http://www.w3.org/2005/Atom feed"`
-	Id               string                 `xml:"id,omitempty"`
-	TotalResults     int                    `xml:"http://a9.com/-/spec/opensearchrss/1.0/ totalResults"`
-	StartIndex       int                    `xml:"http://a9.com/-/spec/opensearchrss/1.0/ startIndex"`
-	ItemsPerPage     int                    `xml:"http://a9.com/-/spec/opensearchrss/1.0/ itemsPerPage"`
-	Contacts         []*Contact             `xml:"entry,omitempty"`
-	GroupMemberships []*GroupMembershipInfo `xml:"groupMembershipInfo,omitempty"`
+	XMLName      xml.Name   `xml:"http://www.w3.org/2005/Atom feed"`
+	Id           string     `xml:"id,omitempty"`
+	Links        []*Link    `xml:"link,omitempty"`
+	TotalResults int        `xml:"http://a9.com/-/spec/opensearchrss/1.0/ totalResults"`
+	StartIndex   int        `xml:"http://a9.com/-/spec/opensearchrss/1.0/ startIndex"`
+	ItemsPerPage int        `xml:"http://a9.com/-/spec/opensearchrss/1.0/ itemsPerPage"`
+	Contacts     []*Contact `xml:"entry,omitempty"`
+}
+
+func (c *contactFeed) getNextLink() *Link {
+	return getNextLink(c.Links)
+}
+
+func getNextLink(links []*Link) *Link {
+	for _, link := range links {
+		if link.Rel == "next" {
+			return link
+		}
+	}
+
+	return nil
 }
 
 type Contact struct {
-	XMLName      xml.Name                   `xml:"http://www.w3.org/2005/Atom entry"`
-	IdUrl        string                     `xml:"id,omitempty"`
-	Updated      *time.Time                 `xml:"updated,omitempty"`
-	Title        string                     `xml:"title,omitempty"`
-	Name         Name                       `xml:"name,omitempty"`
-	Organization *Organization              `xml:"organization,omitempty"`
-	Emails       []*Email                   `xml:"email,omitempty"`
-	Phones       []*Phone                   `xml:"phoneNumber,omitempty"`
-	Addresses    []*StructuredPostalAddress `xml:"structuredPostalAddress,omitempty"`
+	XMLName          xml.Name                   `xml:"http://www.w3.org/2005/Atom entry"`
+	IdUrl            string                     `xml:"id,omitempty"`
+	Updated          *time.Time                 `xml:"updated,omitempty"`
+	Title            string                     `xml:"title,omitempty"`
+	Name             Name                       `xml:"name,omitempty"`
+	Organization     *Organization              `xml:"organization,omitempty"`
+	Emails           []*Email                   `xml:"email,omitempty"`
+	Phones           []*Phone                   `xml:"phoneNumber,omitempty"`
+	Addresses        []*StructuredPostalAddress `xml:"structuredPostalAddress,omitempty"`
+	GroupMemberships []*GroupMembershipInfo     `xml:"groupMembershipInfo,omitempty"`
 }
 
 func (c *Contact) GetId() (string, error) {
@@ -46,6 +62,18 @@ func (c *Contact) GetId() (string, error) {
 	}
 
 	return urlParts[1], nil
+}
+
+func (c *Contact) IsMemberOf(simpleId string) bool {
+	for _, group := range c.GroupMemberships {
+		if path.Base(group.Href) == simpleId {
+			if group.Deleted == false {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func (c *Contact) SetId(id string) {
@@ -146,4 +174,33 @@ type StructuredPostalAddress struct {
 	Region       string   `xml:"region,omitempty"`
 	Postcode     string   `xml:"postcode,omitempty"`
 	Country      string   `xml:"country,omitempty"`
+}
+
+type groupsFeed struct {
+	XMLName      xml.Name `xml:"http://www.w3.org/2005/Atom feed"`
+	Id           string   `xml:"id,omitempty"`
+	Links        []*Link  `xml:"link,omitempty"`
+	TotalResults int      `xml:"http://a9.com/-/spec/opensearchrss/1.0/ totalResults"`
+	StartIndex   int      `xml:"http://a9.com/-/spec/opensearchrss/1.0/ startIndex"`
+	ItemsPerPage int      `xml:"http://a9.com/-/spec/opensearchrss/1.0/ itemsPerPage"`
+	Groups       []*Group `xml:"entry,omitempty"`
+}
+
+func (g *groupsFeed) getNextLink() *Link {
+	return getNextLink(g.Links)
+}
+
+type Group struct {
+	XMLName xml.Name   `xml:"http://www.w3.org/2005/Atom entry"`
+	IdUrl   string     `xml:"id,omitempty"`
+	Updated *time.Time `xml:"updated,omitempty"`
+	Title   string     `xml:"title,omitempty"`
+	Content string     `xml:"content,omitempty"`
+}
+
+type Link struct {
+	XMLName xml.Name `xml:"http://www.w3.org/2005/Atom link"`
+	Rel     string   `xml:"rel,attr"`
+	Type    string   `xml:"type,attr"`
+	Href    string   `xml:"href,attr"`
 }

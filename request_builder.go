@@ -9,6 +9,7 @@ type requestBuilder struct {
 	client    *Client
 	method    string
 	path      string
+	url       string
 	body      io.Reader
 	requestFn func(*http.Request)
 	v         interface{}
@@ -19,6 +20,14 @@ func newRequest(client *Client, method string, path string) *requestBuilder {
 		client: client,
 		method: method,
 		path:   path,
+	}
+}
+
+func newUrlRequest(client *Client, method string, url string) *requestBuilder {
+	return &requestBuilder{
+		client: client,
+		method: method,
+		url:    url,
 	}
 }
 
@@ -38,7 +47,13 @@ func (r *requestBuilder) setInto(v interface{}) *requestBuilder {
 }
 
 func (r *requestBuilder) Do() error {
-	url := r.client.getUrl(r.path)
+	var url string
+	if r.url != "" {
+		url = r.url
+	} else {
+		url = r.client.getUrl(r.path)
+	}
+
 	req, err := http.NewRequest(r.method, url, r.body)
 	if err != nil {
 		return err
