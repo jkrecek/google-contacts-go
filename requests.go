@@ -92,7 +92,7 @@ func (c *Client) UpdateContact(address string, contact *Contact) (*Contact, erro
 		setBody(bodyReader).
 		setInto(respContact).
 		setRequestFn(func(request *http.Request) {
-			request.Header.Set("If-None-Match", "DUMMY")
+			request.Header.Set("If-match", "*")
 		}).
 		Do()
 
@@ -106,7 +106,7 @@ func (c *Client) UpdateContact(address string, contact *Contact) (*Contact, erro
 func (c *Client) DeleteContact(contactId string) error {
 	err := newRequest(c, "DELETE", fmt.Sprintf("contacts/default/full/%s", contactId)).
 		setRequestFn(func(request *http.Request) {
-			request.Header.Set("If-None-Match", "DUMMY2")
+			request.Header.Set("If-match", "*")
 		}).
 		Do()
 	return err
